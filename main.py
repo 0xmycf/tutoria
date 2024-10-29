@@ -64,11 +64,19 @@ def main():
 
     sheet = Sheet().from_file(data / "sheet.json")
 
+    if args[0] == "keys":
+        for i, key in enumerate(sheet.data["name"].keys()):
+            print(f"{i+1}: ", key)
+        return
+
     if args[0] == "read":
-        data = sheet.person(args[1])
-        max_len = max(len(k) for k in data.keys())
-        for k,v in data.items():
-            print(f"{k:<{max_len}}: {v}")
+        if len(args) == 2:
+            data = sheet.person(args[1])
+            max_len = max(len(k) for k in data.keys())
+            for k,v in data.items():
+                print(f"{k:<{max_len}}: {v}")
+        else:
+            print(sheet.data)
         return
 
     topic, score = args[1].split(":")
