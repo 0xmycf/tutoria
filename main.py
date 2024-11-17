@@ -5,6 +5,7 @@ import os.path as path
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
+import subprocess as process
 
 def get_data_home():
     """
@@ -21,7 +22,7 @@ class Person:
 @dataclass
 class Task:
     task_name: str
-    score: int
+    score: float
 
 class Sheet:
     def __init__(self) -> None:
@@ -31,7 +32,10 @@ class Sheet:
                 }
 
     def add_task(self, person: Person, task: Task):
-        self.data["name"][person.name][task.task_name] = task.score
+        try:
+            self.data["name"][person.name][task.task_name] = task.score
+        except KeyError:
+            self.data["name"][person.name] = {task.task_name: task.score}
 
     def person(self, name: str):
         return self.data["name"][name] # TODO make pretty
@@ -46,10 +50,21 @@ class Sheet:
 
 def main():
     data = get_data_home() / "tutoria"
+    filepath = data / "sheet.json"
     if not path.exists(data):
         os.makedirs(data)
     
     args = sys.argv[1:]
+
+    if not args:
+        print("Please provide a command (one of [ delete | read | names | keys | <name> <topic>:<score> | edit ])")
+        sys.exit(1)
+
+    if len(args) == 1 and args[0] == "edit":
+        resolved = process.run(["nvim", filepath.resolve()])
+        if resolved.returncode != 0: print("nvim exited not successfully")
+        sys.exit(resolved.returncode)
+
     if len(args) == 1 and args[0] == "delete":
         confirm = input("Are you sure you want to delete the sheet? [type anything to confirm]: ")
         if confirm:
@@ -58,13 +73,9 @@ def main():
             print("Sheet not deleted")
         return
 
-    if not args:
-        print("Please provide a command")
-        sys.exit(1)
+    sheet = Sheet().from_file(filepath)
 
-    sheet = Sheet().from_file(data / "sheet.json")
-
-    if args[0] == "keys":
+    if args[0] in ["keys", "names"]:
         for i, key in enumerate(sheet.data["name"].keys()):
             print(f"{i+1}: ", key)
         return
@@ -80,13 +91,13 @@ def main():
         return
 
     topic, score = args[1].split(":")
-    sheet.add_task(Person(args[0]), Task(topic, int(score)))
+    sheet.add_task(Person(args[0]), Task(topic, float(score)))
 
     if path.exists(data / "sheet.json"):
         shutil.copy(data / "sheet.json", data / "sheet.json.bak")
 
     with open(data / "sheet.json", "w") as io:
-        json.dump(sheet.data, io)
+        json.dump(sheet.data, io, indent=4)
 
 if __name__ == '__main__':
     main() 
