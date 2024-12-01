@@ -91,7 +91,8 @@ def main():
     sheet = Sheet().from_file(filepath)
 
     if args[0] in ["keys", "names"]:
-        for i, key in enumerate(sheet.data["name"].keys()):
+        sorted_names = sorted(sheet.data["name"].keys(), key = lambda x: x.lower())
+        for i, key in enumerate(sorted_names):
             print(f"{i+1}: ", key)
         return
 
