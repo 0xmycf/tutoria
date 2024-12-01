@@ -1,6 +1,7 @@
-#!  /usr/bin/env python3
+#! /usr/bin/env python3
 
 from collections import defaultdict
+from collections.abc import Callable
 import  os, sys,  json
 import os.path as path
 import shutil
@@ -48,6 +49,19 @@ class Sheet:
         with open(file, "r") as io:
             self.data = json.load(io)
         return self
+    
+    def search(self, key, value) -> list[tuple[str, str]]:
+        data = self.data["name"]
+        acc = []
+        for name, entry in data.items():
+            if key in entry:
+                content = entry[key]
+                f = type(content) # TODO suboptimal
+                if value == "" or content == f(value): # compare the strings as otherwise we dont know what we're dealing with
+                    acc.append((str(name), str(value)))
+        if acc:
+            return acc
+        return [(f"Can't find any key {key}", str(value))]
 
 def main():
     data = get_data_home() / "tutoria"
@@ -57,8 +71,8 @@ def main():
     
     args = sys.argv[1:]
 
-    if not args:
-        print("Please provide a command (one of [ delete | read | names | keys | <name> <topic>:<score> | edit ])")
+    if not args or "help" in args:
+        print("Please provide a command (one of [ delete | read | names | keys | <name> <topic>:<score> | edit | show with key:value ])")
         sys.exit(1)
 
     if len(args) == 1 and args[0] == "edit":
@@ -81,7 +95,17 @@ def main():
             print(f"{i+1}: ", key)
         return
 
-    if args[0] == "read":
+    if "show" in args and "with" in args and len(args) == 3:
+        content = args[2].split(":")
+        what, value = content[0], ""
+        if len(content) == 2:
+            value = content[1]
+        res = sheet.search(what, value)
+        for (key, value) in res:
+            print(f"Found '{key}' for '{value}'")
+        sys.exit(0)
+
+    if args[0] in [ "read" , "show" ]:
         if len(args) == 2:
             data = sheet.person(args[1])
             max_len = max(len(k) for k in data.keys())
