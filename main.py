@@ -102,7 +102,7 @@ def main():
         if len(content) == 2:
             value = content[1]
         res = sheet.search(what, value)
-        for (key, value) in res:
+        for (key, value) in sorted(res, key = lambda thing: thing[0].lower()):
             print(f"Found '{key}' for '{value}'")
         sys.exit(0)
 
